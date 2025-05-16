@@ -1,0 +1,126 @@
+esphome:
+  name: energy_monitor
+  friendly_name: Energy Monitor
+  # Add the external_components block to load the custom bl0910
+  external_components:
+    - source: ./custom_components/bl0910 # Path relative to the YAML file
+      components: [ bl0910 ]
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+  level: DEBUG
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  password: !secret ota_password
+
+# Example UART Mode Configuration (Single Chip Setup)
+# --------------------------------------------------
+# Uncomment this section to use UART mode
+# uart:
+#   tx_pin: GPIO1
+#   rx_pin: GPIO3
+#   baud_rate: 19200
+#   id: uart_bus
+# 
+# bl0910:
+#   mode: uart
+#   id: my_energy_monitor_uart # Ensure IDs are unique if using multiple configs
+#   update_interval: 10s
+#   frequency:
+#     name: "Mains Frequency UART"
+#   voltage:
+#     name: "Mains Voltage UART"
+#   temperature:
+#     name: "BL0910 Temperature UART"
+#   total_power:
+#     name: "Total Power UART"
+#   total_energy:
+#     name: "Total Energy UART"
+#   channel_1:
+#     current:
+#       name: "Channel 1 Current UART"
+#     power:
+#       name: "Channel 1 Power UART"
+#     energy:
+#       name: "Channel 1 Energy UART"
+#     power_factor:
+#       name: "Channel 1 Power Factor UART"
+
+# Example SPI Mode Configuration (For Single or Multi-Chip Setup)
+# --------------------------------------------------------------
+# This section is active by default in this example.
+spi:
+  clk_pin: GPIO14
+  mosi_pin: GPIO13
+  miso_pin: GPIO12
+  id: spi_bus
+
+bl0910:
+  mode: spi
+  id: my_energy_monitor_spi # Ensure IDs are unique
+  cs_pin: GPIO15  # Chip select pin for SPI communication
+  update_interval: 10s
+  frequency:
+    name: "Mains Frequency SPI"
+  voltage:
+    name: "Mains Voltage SPI"
+  temperature:
+    name: "BL0910 Temperature SPI"
+  total_power:
+    name: "Total Power SPI"
+  total_energy:
+    name: "Total Energy SPI"
+  channel_1:
+    current:
+      name: "Channel 1 Current SPI"
+    power:
+      name: "Channel 1 Power SPI"
+    energy:
+      name: "Channel 1 Energy SPI"
+    power_factor:
+      name: "Channel 1 Power Factor SPI"
+  channel_2:
+    current:
+      name: "Channel 2 Current SPI"
+    power:
+      name: "Channel 2 Power SPI"
+    energy:
+      name: "Channel 2 Energy SPI"
+    power_factor:
+      name: "Channel 2 Power Factor SPI"
+
+# For multi-chip setup, you can add another BL0910 with a different CS pin
+# bl0910:
+#   mode: spi
+#   id: second_energy_monitor_spi # Ensure IDs are unique
+#   cs_pin: GPIO4  # Different chip select pin for the second BL0910
+#   update_interval: 10s
+#   voltage:
+#     name: "Second BL0910 Voltage SPI"
+#   # Add other sensors as needed...
+
+# Example automation to reset energy counters daily at midnight
+time:
+  - platform: homeassistant
+    id: midnight
+    on_time:
+      - hours: 0
+        minutes: 0
+        seconds: 0
+        then:
+          # Ensure you target the correct ID based on your active configuration
+          - bl0910.reset_energy: my_energy_monitor_spi 
