@@ -1,10 +1,10 @@
 esphome:
   name: energy_monitor
   friendly_name: Energy Monitor
-  # Add the external_components block to load the custom bl0910
-  external_components:
-    - source: ./custom_components/bl0910 # Path relative to the YAML file
-      components: [ bl0910 ]
+# Add the external_components block to load the custom bl0910
+external_components:
+  - source: ./custom_components # Path relative to the YAML file
+    components: [ bl0910 ]
 
 esp32:
   board: esp32dev
@@ -105,13 +105,13 @@ bl0910:
 
 # For multi-chip setup, you can add another BL0910 with a different CS pin
 # bl0910:
-#   mode: spi
-#   id: second_energy_monitor_spi # Ensure IDs are unique
-#   cs_pin: GPIO4  # Different chip select pin for the second BL0910
-#   update_interval: 10s
-#   voltage:
-#     name: "Second BL0910 Voltage SPI"
-#   # Add other sensors as needed...
+#  -  mode: spi
+#     id: second_energy_monitor_spi # Ensure IDs are unique
+#     cs_pin: GPIO4  # Different chip select pin for the second BL0910
+#     update_interval: 10s
+#     voltage:
+#       name: "Second BL0910 Voltage SPI"
+#     # Add other sensors as needed...
 
 # Example automation to reset energy counters daily at midnight
 time:

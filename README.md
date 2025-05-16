@@ -71,6 +71,8 @@ bl0910:
       name: "Channel 1 Energy UART"
     power_factor:
       name: "Channel 1 Power Factor UART"
+  channel_n:
+  # Add additional channels (up to 10)
 ```
 
 ### SPI Mode (Single or Multi-Chip)
