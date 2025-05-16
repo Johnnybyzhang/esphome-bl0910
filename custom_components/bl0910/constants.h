@@ -109,7 +109,11 @@ namespace esphome
         // You must first write 0x5555 to the write protection setting register before writing to other registers.
         static const uint8_t BL0910_READ_COMMAND = 0x35;  // 读操作命令
         static const uint8_t BL0910_WRITE_COMMAND = 0xCA; // 写操作命令
-        
+
+        // SPI frame identifiers
+        static const uint8_t BL0910_SPI_READ_COMMAND  = 0x82; // SPI read frame identifier
+        static const uint8_t BL0910_SPI_WRITE_COMMAND = 0x81; // SPI write frame identifier
+
         const uint8_t BL0910_INIT[2][6] = {
             // Reset to default
             {BL0910_WRITE_COMMAND, BL0910_SOFT_RESET, 0x5A, 0x5A, 0x5A, 0x52},

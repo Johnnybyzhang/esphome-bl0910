@@ -156,6 +156,9 @@ Each `bl0910` component can include the following sensors:
   - Clock polarity: Low
   - Clock phase: Leading
   - Data rate: 1 MHz
+- SPI frame protocol (handled internally by this component):
+  - Read frames: send `0x82` (read identifier) + register address; the device returns four bytes in the order Data_H, Data_M, Data_L, Checksum.
+  - Write frames: send `0x81` (write identifier) + register address + Data_H + Data_M + Data_L + Checksum.
 
 ## References
 

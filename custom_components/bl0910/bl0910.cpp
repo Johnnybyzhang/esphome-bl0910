@@ -167,11 +167,20 @@ namespace esphome
     // Reset energy
     void BL0910::reset_energy_()
     {
-      // Write initialization command and clear buffer
-      this->write_array(BL0910_INIT[0], 6);
-      delay(1);
-      this->flush();
-      ESP_LOGW(TAG, "Device reset with init command.");
+      if (this->comm_mode_ == CommunicationMode::SPI) {
+        // SPI interface reset: send six 0xFF
+        this->flush();
+        for (int i = 0; i < 6; i++) {
+          this->write_byte(0xFF);
+        }
+        ESP_LOGW(TAG, "SPI interface reset with 6×0xFF");
+      } else {
+        // UART initialization sequence
+        this->write_array(BL0910_INIT[0], 6);
+        delay(1);
+        this->flush();
+        ESP_LOGW(TAG, "Device reset with init command.");
+      }
     }
 
     // Read data
@@ -179,6 +188,50 @@ namespace esphome
     {
       if (sensor == nullptr)
       {
+        return;
+      }
+
+      // SPI-specific read path: use SPI commands and MSB-first ordering
+      if (this->comm_mode_ == CommunicationMode::SPI) {
+        DataPacket buffer;
+        ube24_t data_u24;
+        sbe24_t data_s24;
+        // Initiate SPI read frame
+        this->flush();
+        this->write_byte(BL0910_SPI_READ_COMMAND);
+        this->write_byte(address);
+        // Read 3 data bytes + checksum
+        if (!this->read_array((uint8_t *)&buffer, sizeof(buffer) - 1))
+          return;
+        if (bl0910_checksum(address, &buffer) != buffer.checksum) {
+          ESP_LOGW(TAG, "SPI checksum failed. Discarding message.");
+          return;
+        }
+        // Determine signed vs unsigned
+        bool signed_result_spi = reference == BL0910_TREF || reference == BL0910_WATT || reference == BL0910_PREF;
+        // SPI shifts MSB first: buffer.l=H, buffer.m=M, buffer.h=L
+        if (signed_result_spi) {
+          data_s24.l = buffer.h;
+          data_s24.m = buffer.m;
+          data_s24.h = buffer.l;
+        } else {
+          data_u24.l = buffer.h;
+          data_u24.m = buffer.m;
+          data_u24.h = buffer.l;
+        }
+        // Convert to float using same reference logic
+        float value = 0;
+        if (reference == BL0910_PREF || reference == BL0910_WATT) {
+          value = (float)to_int32_t(data_s24) * reference;
+        } else if (reference == BL0910_UREF || reference == BL0910_IREF || reference == BL0910_EREF || reference == BL0910_CF) {
+          value = (float)to_uint32_t(data_u24) * reference;
+        } else if (reference == BL0910_FREF) {
+          value = reference / (float)to_uint32_t(data_u24);
+        } else if (reference == BL0910_TREF) {
+          int32_t raw = to_int32_t(data_s24);
+          value = (raw - 64) * 12.5 / 59 - 40;
+        }
+        sensor->publish_state(value);
         return;
       }
 
@@ -261,10 +314,25 @@ namespace esphome
       data.m = (value >> 8) & 0xFF;
       data.h = (value >> 16) & 0xFF;
       data.checksum = bl0910_checksum(address, &data);
-      this->flush();
-      this->write_byte(BL0910_WRITE_COMMAND);
-      this->write_byte(address);
-      this->write_array((uint8_t *)&data, sizeof(data));
+      if (this->comm_mode_ == CommunicationMode::SPI) {
+        // SPI write: 0x81, Addr, H, M, L, checksum
+        this->flush();
+        this->write_byte(BL0910_SPI_WRITE_COMMAND);
+        this->write_byte(address);
+        this->write_byte(data.h);
+        this->write_byte(data.m);
+        this->write_byte(data.l);
+        this->write_byte(data.checksum);
+      } else {
+        // UART write: 0xCA, Addr, L, M, H, checksum
+        this->flush();
+        this->write_byte(BL0910_WRITE_COMMAND);
+        this->write_byte(address);
+        this->write_byte(data.l);
+        this->write_byte(data.m);
+        this->write_byte(data.h);
+        this->write_byte(data.checksum);
+      }
     }
 
     // Gain calibration function
@@ -279,10 +347,25 @@ namespace esphome
       data.m = (value >> 8) & 0xFF;
       data.h = (value >> 16) & 0xFF;
       data.checksum = bl0910_checksum(address, &data);
-      this->flush();
-      this->write_byte(BL0910_WRITE_COMMAND);
-      this->write_byte(address);
-      this->write_array((uint8_t *)&data, sizeof(data));
+      if (this->comm_mode_ == CommunicationMode::SPI) {
+        // SPI write: 0x81, Addr, H, M, L, checksum
+        this->flush();
+        this->write_byte(BL0910_SPI_WRITE_COMMAND);
+        this->write_byte(address);
+        this->write_byte(data.h);
+        this->write_byte(data.m);
+        this->write_byte(data.l);
+        this->write_byte(data.checksum);
+      } else {
+        // UART write: 0xCA, Addr, L, M, H, checksum
+        this->flush();
+        this->write_byte(BL0910_WRITE_COMMAND);
+        this->write_byte(address);
+        this->write_byte(data.l);
+        this->write_byte(data.m);
+        this->write_byte(data.h);
+        this->write_byte(data.checksum);
+      }
     }
 
     void BL0910::dump_config()
