@@ -157,4 +157,4 @@ Each `bl0910` component can include the following sensors:
 
 ## References
 
-- BL0910 datasheet: [Link to datasheet if available] 
+- BL0910 datasheet: [Link to datasheet](https://item.szlcsc.com/datasheet/BL0910/3022283.html) 
